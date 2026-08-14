@@ -1,15 +1,24 @@
-import 'package:flutter_application_1/features/auth/models/user_model.dart';
+import 'user_model.dart';
 
-class AuthResponse {
+class AuthResponseModel {
   final String accessToken;
   final String tokenType;
   final int expiresIn;
-  final User user;
+  final UserModel user;
 
-  const AuthResponse({
+  const AuthResponseModel({
     required this.accessToken,
     required this.tokenType,
     required this.expiresIn,
     required this.user,
   });
+
+  factory AuthResponseModel.fromJson(Map<String, dynamic> json) {
+    return AuthResponseModel(
+      accessToken: json['accessToken'],
+      tokenType: json['tokenType'],
+      expiresIn: json['expiresIn'],
+      user: UserModel.fromJson(json['user']),
+    );
+  }
 }

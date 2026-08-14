@@ -1,63 +1,42 @@
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+import 'core/network/dio_client.dart';
+import 'features/auth/data/datasources/auth_remote_data_source.dart';
+import 'features/auth/data/repositories/auth_repository_impl.dart';
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Service Orders',
-      theme: ThemeData(
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Ordens de serviço'),
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final dioClient = DioClient();
+
+  final dataSource = AuthRemoteDataSource(
+    dioClient,
+  );
+
+  final repository = AuthRepositoryImpl(
+    dataSource,
+  );
+
+  try {
+    final result = await repository.login(
+      email: 'tecnico@orbytis.com.br',
+      password: '123456',
     );
-  }
-}
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {_counter++;});
+    print('Token: ${result.accessToken}');
+    print('Usuário: ${result.user.name}');
+    print('Email: ${result.user.email}');
+  } catch (e) {
+    print('Erro: $e');
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.onPrimaryFixed,
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: .center,
-          children: [
-            Text('You have pushed the button this many times:', style: Theme.of(context).textTheme.bodySmall,),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+  runApp(
+    const MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Text('API funcionando'),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add_a_photo),
-      ),
-    );
-  }
+    ),
+  );
 }
