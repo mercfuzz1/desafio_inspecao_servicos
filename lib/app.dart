@@ -10,7 +10,11 @@ import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/bloc/auth_event.dart';
 import 'features/auth/presentation/bloc/auth_state.dart';
 import 'features/auth/presentation/pages/login_page.dart';
-import 'features/home_page.dart';
+import 'features/work_orders/data/datasources/work_orders_remote_data_source.dart';
+import 'features/work_orders/data/repositories/work_orders_repository_impl.dart';
+import 'features/work_orders/presentation/bloc/work_orders_bloc.dart';
+import 'features/work_orders/presentation/bloc/work_orders_event.dart';
+import 'features/work_orders/presentation/pages/work_orders_page.dart';
 
 class App extends StatelessWidget {
   const App({
@@ -25,21 +29,43 @@ class App extends StatelessWidget {
       secureStorage: secureStorage,
     );
 
-    final remoteDataSource = AuthRemoteDataSource(
+    final authRemoteDataSource =
+        AuthRemoteDataSource(
       dioClient,
     );
 
-    final AuthRepository repository = AuthRepositoryImpl(
-      remoteDataSource: remoteDataSource,
+    final AuthRepository authRepository =
+        AuthRepositoryImpl(
+      remoteDataSource: authRemoteDataSource,
       secureStorage: secureStorage,
     );
 
-    return BlocProvider(
-      create: (_) => AuthBloc(
-        repository: repository,
-      )..add(
-          const AuthStarted(),
+    final workOrdersRemoteDataSource =
+        WorkOrdersRemoteDataSource(
+      dioClient,
+    );
+
+    final workOrdersRepository =
+        WorkOrdersRepositoryImpl(
+      remoteDataSource:
+          workOrdersRemoteDataSource,
+    );
+
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => AuthBloc(
+            repository: authRepository,
+          )..add(
+              const AuthStarted(),
+            ),
         ),
+        BlocProvider(
+          create: (_) => WorkOrdersBloc(
+            repository: workOrdersRepository,
+          ),
+        ),
+      ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Field Inspection',
@@ -53,7 +79,7 @@ class App extends StatelessWidget {
           builder: (context, state) {
             switch (state.status) {
               case AuthStatus.authenticated:
-                return const HomePage();
+                return const WorkOrdersPage();
 
               case AuthStatus.unauthenticated:
               case AuthStatus.failure:
