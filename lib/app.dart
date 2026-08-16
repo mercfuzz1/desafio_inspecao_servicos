@@ -22,6 +22,7 @@ import 'features/inspections/data/datasources/inspections_local_data_source.dart
 import 'features/inspections/data/repositories/inspections_repository_impl.dart';
 import 'features/inspections/domain/repositories/inspections_repository.dart';
 import 'features/inspections/data/datasources/inspections_remote_data_source.dart';
+import 'features/inspections/presentation/bloc/inspections_history_bloc.dart';
 
 import 'features/sync/data/services/sync_service_impl.dart';
 import 'features/sync/domain/services/sync_service.dart';
@@ -117,6 +118,11 @@ class App extends StatelessWidget {
               syncService: syncService,
               connectivityService: connectivityService,
             ),
+          ),
+
+          BlocProvider(
+            create: (_) =>
+                InspectionsHistoryBloc(repository: inspectionsRepository),
           ),
         ],
         child: MaterialApp(

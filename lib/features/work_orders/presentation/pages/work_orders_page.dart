@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../inspections/domain/repositories/inspections_repository.dart';
+import '../../../inspections/presentation/pages/inspections_history_page.dart';
 import '../bloc/work_orders_bloc.dart';
 import '../bloc/work_orders_event.dart';
 import '../bloc/work_orders_state.dart';
@@ -58,6 +59,17 @@ class _WorkOrdersPageState extends State<WorkOrdersPage> {
                 tooltip: 'Sincronizar',
               );
             },
+          ),
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const InspectionsHistoryPage(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.history),
+            tooltip: 'Histórico de inspeções',
           ),
         ],
       ),

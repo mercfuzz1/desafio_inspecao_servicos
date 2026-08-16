@@ -13,22 +13,41 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
 
   StreamSubscription<bool>? _connectivitySubscription;
 
-  SyncBloc({
-    required this.syncService,
-    required this.connectivityService,
-  }) : super(const SyncState()) {
+  SyncBloc({required this.syncService, required this.connectivityService})
+    : super(const SyncState()) {
     on<SyncRequested>(_onSyncRequested);
+    on<SyncRetryFailedRequested>(_onSyncRetryFailedRequested);
 
-    _connectivitySubscription =
-        connectivityService.onConnectivityChanged.listen(
-      (isConnected) {
-        if (isConnected) {
-          add(
-            const SyncRequested(),
-          );
-        }
-      },
-    );
+    _connectivitySubscription = connectivityService.onConnectivityChanged
+        .listen((isConnected) {
+          if (isConnected) {
+            add(const SyncRequested());
+          }
+        });
+  }
+
+  Future<void> _onSyncRetryFailedRequested(
+    SyncRetryFailedRequested event,
+    Emitter<SyncState> emit,
+  ) async {
+    if (state.status == SyncStatus.syncing) {
+      return;
+    }
+
+    emit(state.copyWith(status: SyncStatus.syncing, clearErrorMessage: true));
+
+    try {
+      await syncService.retryFailed();
+
+      emit(state.copyWith(status: SyncStatus.success, clearErrorMessage: true));
+    } catch (error) {
+      emit(
+        state.copyWith(
+          status: SyncStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
   }
 
   Future<void> _onSyncRequested(
@@ -39,29 +58,18 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
       return;
     }
 
-    final isConnected =
-        await connectivityService.isConnected;
+    final isConnected = await connectivityService.isConnected;
 
     if (!isConnected) {
       return;
     }
 
-    emit(
-      state.copyWith(
-        status: SyncStatus.syncing,
-        clearErrorMessage: true,
-      ),
-    );
+    emit(state.copyWith(status: SyncStatus.syncing, clearErrorMessage: true));
 
     try {
       await syncService.sync();
 
-      emit(
-        state.copyWith(
-          status: SyncStatus.success,
-          clearErrorMessage: true,
-        ),
-      );
+      emit(state.copyWith(status: SyncStatus.success, clearErrorMessage: true));
     } catch (error) {
       emit(
         state.copyWith(

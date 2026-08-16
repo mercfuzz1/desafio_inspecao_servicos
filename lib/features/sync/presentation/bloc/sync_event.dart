@@ -10,3 +10,7 @@ sealed class SyncEvent extends Equatable {
 final class SyncRequested extends SyncEvent {
   const SyncRequested();
 }
+
+final class SyncRetryFailedRequested extends SyncEvent {
+  const SyncRetryFailedRequested();
+}
