@@ -1,3 +1,4 @@
+import '../../../inspections/domain/entities/inspection.dart';
 import '../../../inspections/domain/entities/inspection_sync_status.dart';
 import '../../../inspections/domain/repositories/inspections_repository.dart';
 import '../../domain/services/sync_service.dart';
@@ -16,6 +17,26 @@ class SyncServiceImpl implements SyncService {
       InspectionSyncStatus.pending,
     );
 
+    await _processInspections(
+      inspections,
+    );
+  }
+
+  @override
+  Future<void> retryFailed() async {
+    final inspections =
+        await inspectionsRepository.getByStatus(
+      InspectionSyncStatus.failed,
+    );
+
+    await _processInspections(
+      inspections,
+    );
+  }
+
+  Future<void> _processInspections(
+    List<Inspection> inspections,
+  ) async {
     for (final inspection in inspections) {
       try {
         final serverId =
@@ -30,13 +51,9 @@ class SyncServiceImpl implements SyncService {
       } catch (error) {
         await inspectionsRepository.markAsFailed(
           clientId: inspection.clientId,
-          error: _getErrorMessage(error),
+          error: error.toString(),
         );
       }
     }
-  }
-
-  String _getErrorMessage(Object error) {
-    return error.toString();
   }
 }

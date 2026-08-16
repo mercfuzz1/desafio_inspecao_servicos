@@ -28,6 +28,7 @@ import 'features/sync/domain/services/sync_service.dart';
 // import 'features/sync/data/services/sync_service_impl.dart';
 // import 'features/sync/domain/services/sync_service.dart';
 import 'features/sync/presentation/bloc/sync_bloc.dart';
+import 'core/connectivity/connectivity_service.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -87,6 +88,8 @@ class App extends StatelessWidget {
       inspectionsRepository: inspectionsRepository,
     );
 
+    final connectivityService = ConnectivityService();
+
     // ==================================================
     // PROVIDERS
     // ==================================================
@@ -109,7 +112,12 @@ class App extends StatelessWidget {
             create: (_) => WorkOrdersBloc(repository: workOrdersRepository),
           ),
 
-          BlocProvider(create: (_) => SyncBloc(syncService: syncService)),
+          BlocProvider(
+            create: (_) => SyncBloc(
+              syncService: syncService,
+              connectivityService: connectivityService,
+            ),
+          ),
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
