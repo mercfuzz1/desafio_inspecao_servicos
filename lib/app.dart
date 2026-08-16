@@ -23,6 +23,9 @@ import 'features/inspections/data/repositories/inspections_repository_impl.dart'
 import 'features/inspections/domain/repositories/inspections_repository.dart';
 import 'features/inspections/data/datasources/inspections_remote_data_source.dart';
 
+import 'features/sync/data/services/sync_service_impl.dart';
+import 'features/sync/domain/services/sync_service.dart';
+
 class App extends StatelessWidget {
   const App({super.key});
 
@@ -77,6 +80,10 @@ class App extends StatelessWidget {
           remoteDataSource: inspectionsRemoteDataSource,
         );
 
+    final SyncService syncService = SyncServiceImpl(
+      inspectionsRepository: inspectionsRepository,
+    );
+
     // ==================================================
     // PROVIDERS
     // ==================================================
@@ -86,6 +93,7 @@ class App extends StatelessWidget {
         RepositoryProvider<InspectionsRepository>.value(
           value: inspectionsRepository,
         ),
+        RepositoryProvider<SyncService>.value(value: syncService),
       ],
       child: MultiBlocProvider(
         providers: [
