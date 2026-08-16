@@ -21,11 +21,18 @@ import 'features/work_orders/presentation/pages/work_orders_page.dart';
 import 'features/inspections/data/datasources/inspections_local_data_source.dart';
 import 'features/inspections/data/repositories/inspections_repository_impl.dart';
 import 'features/inspections/domain/repositories/inspections_repository.dart';
+import 'features/inspections/data/datasources/inspections_remote_data_source.dart';
+import 'features/inspections/presentation/bloc/inspections_history_bloc.dart';
+
+import 'features/sync/data/services/sync_service_impl.dart';
+import 'features/sync/domain/services/sync_service.dart';
+// import 'features/sync/data/services/sync_service_impl.dart';
+// import 'features/sync/domain/services/sync_service.dart';
+import 'features/sync/presentation/bloc/sync_bloc.dart';
+import 'core/connectivity/connectivity_service.dart';
 
 class App extends StatelessWidget {
-  const App({
-    super.key,
-  });
+  const App({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -35,9 +42,7 @@ class App extends StatelessWidget {
 
     final secureStorage = SecureStorage();
 
-    final dioClient = DioClient(
-      secureStorage: secureStorage,
-    );
+    final dioClient = DioClient(secureStorage: secureStorage);
 
     final database = AppDatabase();
 
@@ -45,13 +50,9 @@ class App extends StatelessWidget {
     // AUTH
     // ==================================================
 
-    final authRemoteDataSource =
-        AuthRemoteDataSource(
-      dioClient,
-    );
+    final authRemoteDataSource = AuthRemoteDataSource(dioClient);
 
-    final AuthRepository authRepository =
-        AuthRepositoryImpl(
+    final AuthRepository authRepository = AuthRepositoryImpl(
       remoteDataSource: authRemoteDataSource,
       secureStorage: secureStorage,
     );
@@ -60,34 +61,35 @@ class App extends StatelessWidget {
     // WORK ORDERS
     // ==================================================
 
-    final workOrdersRemoteDataSource =
-        WorkOrdersRemoteDataSource(
-      dioClient,
-    );
+    final workOrdersRemoteDataSource = WorkOrdersRemoteDataSource(dioClient);
 
-    final workOrdersRepository =
-        WorkOrdersRepositoryImpl(
-      remoteDataSource:
-          workOrdersRemoteDataSource,
+    final workOrdersRepository = WorkOrdersRepositoryImpl(
+      remoteDataSource: workOrdersRemoteDataSource,
     );
 
     // ==================================================
     // INSPECTIONS
     // ==================================================
 
-    final inspectionsDao =
-        database.inspectionsDao;
+    final inspectionsDao = database.inspectionsDao;
 
-    final inspectionsLocalDataSource =
-        InspectionsLocalDataSource(
+    final inspectionsLocalDataSource = InspectionsLocalDataSource(
       dao: inspectionsDao,
     );
 
+    final inspectionsRemoteDataSource = InspectionsRemoteDataSource(dioClient);
+
     final InspectionsRepository inspectionsRepository =
         InspectionsRepositoryImpl(
-      localDataSource:
-          inspectionsLocalDataSource,
+          localDataSource: inspectionsLocalDataSource,
+          remoteDataSource: inspectionsRemoteDataSource,
+        );
+
+    final SyncService syncService = SyncServiceImpl(
+      inspectionsRepository: inspectionsRepository,
     );
+
+    final connectivityService = ConnectivityService();
 
     // ==================================================
     // PROVIDERS
@@ -98,30 +100,36 @@ class App extends StatelessWidget {
         RepositoryProvider<InspectionsRepository>.value(
           value: inspectionsRepository,
         ),
+        RepositoryProvider<SyncService>.value(value: syncService),
       ],
       child: MultiBlocProvider(
         providers: [
           BlocProvider(
-            create: (_) => AuthBloc(
-              repository: authRepository,
-            )..add(
-                const AuthStarted(),
-              ),
+            create: (_) =>
+                AuthBloc(repository: authRepository)..add(const AuthStarted()),
           ),
 
           BlocProvider(
-            create: (_) => WorkOrdersBloc(
-              repository: workOrdersRepository,
+            create: (_) => WorkOrdersBloc(repository: workOrdersRepository),
+          ),
+
+          BlocProvider(
+            create: (_) => SyncBloc(
+              syncService: syncService,
+              connectivityService: connectivityService,
             ),
+          ),
+
+          BlocProvider(
+            create: (_) =>
+                InspectionsHistoryBloc(repository: inspectionsRepository),
           ),
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Field Inspection',
           theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.blue,
-            ),
+            colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
             useMaterial3: true,
           ),
           home: BlocBuilder<AuthBloc, AuthState>(
@@ -129,9 +137,8 @@ class App extends StatelessWidget {
               switch (state.status) {
                 case AuthStatus.authenticated:
                   return WorkOrdersPage(
-                    inspectionsRepository:
-                        context.read<
-                            InspectionsRepository>(),
+                    inspectionsRepository: context
+                        .read<InspectionsRepository>(),
                   );
 
                 case AuthStatus.unauthenticated:
@@ -141,9 +148,7 @@ class App extends StatelessWidget {
                 case AuthStatus.initial:
                 case AuthStatus.loading:
                   return const Scaffold(
-                    body: Center(
-                      child: CircularProgressIndicator(),
-                    ),
+                    body: Center(child: CircularProgressIndicator()),
                   );
               }
             },

@@ -25,4 +25,8 @@ abstract interface class InspectionsRepository {
     required String clientId,
     required String error,
   });
+
+  Future<String> send(
+    Inspection inspection,
+  );
 }
