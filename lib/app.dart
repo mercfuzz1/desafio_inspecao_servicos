@@ -25,6 +25,9 @@ import 'features/inspections/data/datasources/inspections_remote_data_source.dar
 
 import 'features/sync/data/services/sync_service_impl.dart';
 import 'features/sync/domain/services/sync_service.dart';
+// import 'features/sync/data/services/sync_service_impl.dart';
+// import 'features/sync/domain/services/sync_service.dart';
+import 'features/sync/presentation/bloc/sync_bloc.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -105,6 +108,8 @@ class App extends StatelessWidget {
           BlocProvider(
             create: (_) => WorkOrdersBloc(repository: workOrdersRepository),
           ),
+
+          BlocProvider(create: (_) => SyncBloc(syncService: syncService)),
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
