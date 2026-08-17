@@ -5,6 +5,7 @@ import '../../domain/entities/inspection_sync_status.dart';
 import '../../domain/repositories/inspections_repository.dart';
 import 'inspection_form_event.dart';
 import 'inspection_form_state.dart';
+import 'package:uuid/uuid.dart';
 
 class InspectionFormBloc
     extends Bloc<InspectionFormEvent, InspectionFormState> {
@@ -143,6 +144,6 @@ class InspectionFormBloc
   }
 
   String _generateClientId() {
-    return DateTime.now().microsecondsSinceEpoch.toString();
+    return const Uuid().v4();
   }
 }
