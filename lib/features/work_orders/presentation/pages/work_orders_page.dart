@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_event.dart';
+
 import '../../../inspections/domain/repositories/inspections_repository.dart';
 import '../../../inspections/presentation/pages/inspections_history_page.dart';
 
 import '../../../sync/presentation/bloc/sync_bloc.dart';
 import '../../../sync/presentation/bloc/sync_event.dart';
 import '../../../sync/presentation/bloc/sync_state.dart';
-
-import '../../../auth/presentation/bloc/auth_bloc.dart';
-import '../../../auth/presentation/bloc/auth_event.dart';
 
 import '../bloc/work_orders_bloc.dart';
 import '../bloc/work_orders_event.dart';
@@ -34,8 +34,14 @@ class _WorkOrdersPageState extends State<WorkOrdersPage> {
     context.read<WorkOrdersBloc>().add(const WorkOrdersRequested());
   }
 
-  void _logout() {
-    context.read<AuthBloc>().add(const AuthLogoutRequested());
+  void _showMessage(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -44,7 +50,18 @@ class _WorkOrdersPageState extends State<WorkOrdersPage> {
       appBar: AppBar(
         title: const Text('Ordens de Serviço'),
         actions: [
-          BlocBuilder<SyncBloc, SyncState>(
+          BlocConsumer<SyncBloc, SyncState>(
+            listener: (context, state) {
+              if (state.status == SyncStatus.success) {
+                _showMessage('Suas inspeções estão sincronizadas.');
+              }
+
+              if (state.status == SyncStatus.failure) {
+                _showMessage(
+                  state.errorMessage ?? 'Algo deu errado na sincronização.',
+                );
+              }
+            },
             builder: (context, state) {
               if (state.status == SyncStatus.syncing) {
                 return const Padding(
@@ -82,52 +99,15 @@ class _WorkOrdersPageState extends State<WorkOrdersPage> {
           ),
 
           IconButton(
-            onPressed: _logout,
+            onPressed: () {
+              context.read<AuthBloc>().add(const AuthLogoutRequested());
+            },
             icon: const Icon(Icons.logout),
             tooltip: 'Sair',
           ),
         ],
       ),
-
-      body: BlocConsumer<WorkOrdersBloc, WorkOrdersState>(
-        listenWhen: (previous, current) {
-          return previous.status == WorkOrdersStatus.refreshing &&
-              (current.status == WorkOrdersStatus.success ||
-                  current.status == WorkOrdersStatus.failure ||
-                  current.status == WorkOrdersStatus.empty);
-        },
-        listener: (context, state) {
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-          if (state.status == WorkOrdersStatus.success) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Ordens de serviço atualizadas com sucesso.'),
-              ),
-            );
-          }
-
-          if (state.status == WorkOrdersStatus.empty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'A lista foi atualizada, mas nenhuma ordem de serviço foi encontrada.',
-                ),
-              ),
-            );
-          }
-
-          if (state.status == WorkOrdersStatus.failure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  state.errorMessage ??
-                      'Não foi possível atualizar as ordens de serviço.',
-                ),
-              ),
-            );
-          }
-        },
+      body: BlocBuilder<WorkOrdersBloc, WorkOrdersState>(
         builder: (context, state) {
           switch (state.status) {
             case WorkOrdersStatus.initial:
@@ -167,6 +147,20 @@ class _WorkOrdersPageState extends State<WorkOrdersPage> {
                         state.status == WorkOrdersStatus.empty ||
                         state.status == WorkOrdersStatus.failure,
                   );
+
+                  if (!mounted) return;
+
+                  final currentState = context.read<WorkOrdersBloc>().state;
+
+                  if (currentState.errorMessage != null) {
+                    _showMessage(currentState.errorMessage!);
+                  } else if (currentState.status == WorkOrdersStatus.success) {
+                    _showMessage('Ordens de serviço atualizadas com sucesso.');
+                  } else if (currentState.status == WorkOrdersStatus.empty) {
+                    _showMessage(
+                      'A lista foi atualizada, mas nenhuma ordem de serviço foi encontrada.',
+                    );
+                  }
                 },
                 child: ListView.builder(
                   padding: const EdgeInsets.all(16),
