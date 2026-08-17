@@ -3,20 +3,27 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../inspections/domain/repositories/inspections_repository.dart';
 import '../../../inspections/presentation/pages/inspections_history_page.dart';
+
+import '../../../sync/presentation/bloc/sync_bloc.dart';
+import '../../../sync/presentation/bloc/sync_event.dart';
+import '../../../sync/presentation/bloc/sync_state.dart';
+
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_event.dart';
+
 import '../bloc/work_orders_bloc.dart';
 import '../bloc/work_orders_event.dart';
 import '../bloc/work_orders_state.dart';
 import '../widgets/work_order_card.dart';
 import 'work_order_detail_page.dart';
 
-import '../../../sync/presentation/bloc/sync_bloc.dart';
-import '../../../sync/presentation/bloc/sync_event.dart';
-import '../../../sync/presentation/bloc/sync_state.dart';
-
 class WorkOrdersPage extends StatefulWidget {
   final InspectionsRepository inspectionsRepository;
 
-  const WorkOrdersPage({super.key, required this.inspectionsRepository});
+  const WorkOrdersPage({
+    super.key,
+    required this.inspectionsRepository,
+  });
 
   @override
   State<WorkOrdersPage> createState() => _WorkOrdersPageState();
@@ -27,7 +34,15 @@ class _WorkOrdersPageState extends State<WorkOrdersPage> {
   void initState() {
     super.initState();
 
-    context.read<WorkOrdersBloc>().add(const WorkOrdersRequested());
+    context.read<WorkOrdersBloc>().add(
+          const WorkOrdersRequested(),
+        );
+  }
+
+  void _logout() {
+    context.read<AuthBloc>().add(
+          const AuthLogoutRequested(),
+        );
   }
 
   @override
@@ -45,7 +60,9 @@ class _WorkOrdersPageState extends State<WorkOrdersPage> {
                     child: SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                      ),
                     ),
                   ),
                 );
@@ -53,13 +70,16 @@ class _WorkOrdersPageState extends State<WorkOrdersPage> {
 
               return IconButton(
                 onPressed: () {
-                  context.read<SyncBloc>().add(const SyncRequested());
+                  context.read<SyncBloc>().add(
+                        const SyncRequested(),
+                      );
                 },
                 icon: const Icon(Icons.sync),
                 tooltip: 'Sincronizar',
               );
             },
           ),
+
           IconButton(
             onPressed: () {
               Navigator.of(context).push(
@@ -71,21 +91,30 @@ class _WorkOrdersPageState extends State<WorkOrdersPage> {
             icon: const Icon(Icons.history),
             tooltip: 'Histórico de inspeções',
           ),
+
+          IconButton(
+            onPressed: _logout,
+            icon: const Icon(Icons.logout),
+            tooltip: 'Sair',
+          ),
         ],
       ),
+
       body: BlocBuilder<WorkOrdersBloc, WorkOrdersState>(
         builder: (context, state) {
           switch (state.status) {
             case WorkOrdersStatus.initial:
             case WorkOrdersStatus.loading:
-              return const Center(child: CircularProgressIndicator());
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
 
             case WorkOrdersStatus.empty:
               return _EmptyState(
                 onRetry: () {
                   context.read<WorkOrdersBloc>().add(
-                    const WorkOrdersRequested(),
-                  );
+                        const WorkOrdersRequested(),
+                      );
                 },
               );
 
@@ -94,8 +123,8 @@ class _WorkOrdersPageState extends State<WorkOrdersPage> {
                 message: state.errorMessage,
                 onRetry: () {
                   context.read<WorkOrdersBloc>().add(
-                    const WorkOrdersRequested(),
-                  );
+                        const WorkOrdersRequested(),
+                      );
                 },
               );
 
@@ -104,32 +133,42 @@ class _WorkOrdersPageState extends State<WorkOrdersPage> {
               return RefreshIndicator(
                 onRefresh: () async {
                   context.read<WorkOrdersBloc>().add(
-                    const WorkOrdersRefreshRequested(),
-                  );
+                        const WorkOrdersRefreshRequested(),
+                      );
 
-                  await context.read<WorkOrdersBloc>().stream.firstWhere(
-                    (state) =>
-                        state.status == WorkOrdersStatus.success ||
-                        state.status == WorkOrdersStatus.empty ||
-                        state.status == WorkOrdersStatus.failure,
-                  );
+                  await context
+                      .read<WorkOrdersBloc>()
+                      .stream
+                      .firstWhere(
+                        (state) =>
+                            state.status ==
+                                WorkOrdersStatus.success ||
+                            state.status ==
+                                WorkOrdersStatus.empty ||
+                            state.status ==
+                                WorkOrdersStatus.failure,
+                      );
                 },
                 child: ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  physics: const AlwaysScrollableScrollPhysics(),
+                  physics:
+                      const AlwaysScrollableScrollPhysics(),
                   itemCount: state.workOrders.length,
                   itemBuilder: (context, index) {
-                    final workOrder = state.workOrders[index];
+                    final workOrder =
+                        state.workOrders[index];
 
                     return WorkOrderCard(
                       workOrder: workOrder,
                       onTap: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => WorkOrderDetailPage(
+                            builder: (_) =>
+                                WorkOrderDetailPage(
                               workOrder: workOrder,
                               inspectionsRepository:
-                                  widget.inspectionsRepository,
+                                  widget
+                                      .inspectionsRepository,
                             ),
                           ),
                         );
@@ -148,7 +187,9 @@ class _WorkOrdersPageState extends State<WorkOrdersPage> {
 class _EmptyState extends StatelessWidget {
   final VoidCallback onRetry;
 
-  const _EmptyState({required this.onRetry});
+  const _EmptyState({
+    required this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -158,7 +199,10 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.assignment_outlined, size: 48),
+            const Icon(
+              Icons.assignment_outlined,
+              size: 48,
+            ),
             const SizedBox(height: 16),
             const Text(
               'Nenhuma ordem de serviço encontrada.',
@@ -167,7 +211,9 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 16),
             OutlinedButton(
               onPressed: onRetry,
-              child: const Text('Tentar novamente'),
+              child: const Text(
+                'Tentar novamente',
+              ),
             ),
           ],
         ),
@@ -180,7 +226,10 @@ class _ErrorState extends StatelessWidget {
   final String? message;
   final VoidCallback onRetry;
 
-  const _ErrorState({required this.message, required this.onRetry});
+  const _ErrorState({
+    required this.message,
+    required this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -190,7 +239,10 @@ class _ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off, size: 48),
+            const Icon(
+              Icons.cloud_off,
+              size: 48,
+            ),
             const SizedBox(height: 16),
             const Text(
               'Não foi possível carregar as ordens de serviço.',
@@ -198,12 +250,17 @@ class _ErrorState extends StatelessWidget {
             ),
             if (message != null) ...[
               const SizedBox(height: 8),
-              Text(message!, textAlign: TextAlign.center),
+              Text(
+                message!,
+                textAlign: TextAlign.center,
+              ),
             ],
             const SizedBox(height: 16),
             OutlinedButton(
               onPressed: onRetry,
-              child: const Text('Tentar novamente'),
+              child: const Text(
+                'Tentar novamente',
+              ),
             ),
           ],
         ),
