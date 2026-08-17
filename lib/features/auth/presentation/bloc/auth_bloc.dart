@@ -79,7 +79,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(
         state.copyWith(
           status: AuthStatus.failure,
-          errorMessage: e.toString(),
+          errorMessage: 'E-mail ou senha inválidos.',
         ),
       );
     }

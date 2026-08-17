@@ -27,6 +27,8 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _login() {
+    FocusScope.of(context).unfocus();
+
     context.read<AuthBloc>().add(
           AuthLoginRequested(
             email: _emailController.text.trim(),
@@ -41,65 +43,106 @@ class _LoginPageState extends State<LoginPage> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: BlocListener<AuthBloc, AuthState>(
-            listener: (context, state) {
-              if (state.status == AuthStatus.failure) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      state.errorMessage ?? 'Erro ao realizar login',
+          child: BlocBuilder<AuthBloc, AuthState>(
+            builder: (context, state) {
+              final isLoading = state.status == AuthStatus.loading;
+              final hasError = state.status == AuthStatus.failure;
+
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Field Inspection',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                );
-              }
-            },
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'Field Inspection',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                TextField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'E-mail',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Senha',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: BlocBuilder<AuthBloc, AuthState>(
-                    builder: (context, state) {
-                      final isLoading =
-                          state.status == AuthStatus.loading;
 
-                      return ElevatedButton(
-                        onPressed: isLoading ? null : _login,
-                        child: isLoading
-                            ? const CircularProgressIndicator()
-                            : const Text('Entrar'),
-                      );
-                    },
+                  const SizedBox(height: 32),
+
+                  TextField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    enabled: !isLoading,
+                    decoration: const InputDecoration(
+                      labelText: 'E-mail',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                ),
-              ],
-            ),
+
+                  const SizedBox(height: 16),
+
+                  TextField(
+                    controller: _passwordController,
+                    obscureText: true,
+                    enabled: !isLoading,
+                    onSubmitted: (_) {
+                      if (!isLoading) {
+                        _login();
+                      }
+                    },
+                    decoration: const InputDecoration(
+                      labelText: 'Senha',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+
+                  if (hasError) ...[
+                    const SizedBox(height: 16),
+
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.red.shade200,
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: Colors.red.shade700,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              state.errorMessage ??
+                                  'E-mail ou senha inválidos.',
+                              style: TextStyle(
+                                color: Colors.red.shade700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 24),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: isLoading ? null : _login,
+                      child: isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text('Entrar'),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
