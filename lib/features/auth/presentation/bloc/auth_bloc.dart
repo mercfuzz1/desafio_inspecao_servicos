@@ -15,43 +15,45 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthLogoutRequested>(_onLogoutRequested);
   }
 
-  Future<void> _onAuthStarted(
-    AuthStarted event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(
-      state.copyWith(
-        status: AuthStatus.loading,
-      ),
-    );
+Future<void> _onAuthStarted(
+  AuthStarted event,
+  Emitter<AuthState> emit,
+) async {
+  emit(
+    state.copyWith(
+      status: AuthStatus.loading,
+    ),
+  );
 
-    try {
-      final user = await repository.restoreSession();
+  try {
+    final hasSession = await repository.hasSession();
 
-      if (user == null) {
-        emit(
-          state.copyWith(
-            status: AuthStatus.unauthenticated,
-          ),
-        );
-
-        return;
-      }
-
-      emit(
-        state.copyWith(
-          status: AuthStatus.authenticated,
-          user: user,
-        ),
-      );
-    } catch (_) {
+    if (!hasSession) {
       emit(
         state.copyWith(
           status: AuthStatus.unauthenticated,
         ),
       );
+
+      return;
     }
+
+    final user = await repository.restoreSession();
+
+    emit(
+      state.copyWith(
+        status: AuthStatus.authenticated,
+        user: user,
+      ),
+    );
+  } catch (_) {
+    emit(
+      state.copyWith(
+        status: AuthStatus.authenticated,
+      ),
+    );
   }
+}
 
   Future<void> _onLoginRequested(
     AuthLoginRequested event,
