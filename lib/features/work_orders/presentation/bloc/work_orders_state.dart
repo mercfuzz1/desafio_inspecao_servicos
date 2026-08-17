@@ -5,10 +5,10 @@ import '../../domain/entities/work_order.dart';
 enum WorkOrdersStatus {
   initial,
   loading,
+  refreshing,
   success,
   empty,
   failure,
-  refreshing,
 }
 
 class WorkOrdersState extends Equatable {
@@ -26,11 +26,14 @@ class WorkOrdersState extends Equatable {
     WorkOrdersStatus? status,
     List<WorkOrder>? workOrders,
     String? errorMessage,
+    bool clearErrorMessage = false,
   }) {
     return WorkOrdersState(
       status: status ?? this.status,
       workOrders: workOrders ?? this.workOrders,
-      errorMessage: errorMessage,
+      errorMessage: clearErrorMessage
+          ? null
+          : errorMessage ?? this.errorMessage,
     );
   }
 

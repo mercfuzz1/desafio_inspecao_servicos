@@ -18,47 +18,30 @@ class WorkOrderDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(workOrder.code),
-      ),
+      appBar: AppBar(title: Text(workOrder.code)),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           Text(
             workOrder.title,
-            style: Theme.of(context)
-                .textTheme
-                .headlineSmall
-                ?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),
 
-          _InfoSection(
-            title: 'Descrição',
-            value: workOrder.description,
-          ),
+          _InfoSection(title: 'Descrição', value: workOrder.description),
 
-          _InfoSection(
-            title: 'Local',
-            value: workOrder.address,
-          ),
+          _InfoSection(title: 'Local', value: workOrder.address),
 
           _InfoSection(
             title: 'Prioridade',
             value: workOrder.priority.toUpperCase(),
           ),
 
-          _InfoSection(
-            title: 'Status',
-            value: workOrder.status.toUpperCase(),
-          ),
+          _InfoSection(title: 'Status', value: workOrder.status.toUpperCase()),
 
-          _InfoSection(
-            title: 'Latitude',
-            value: workOrder.latitude.toString(),
-          ),
+          _InfoSection(title: 'Latitude', value: workOrder.latitude.toString()),
 
           _InfoSection(
             title: 'Longitude',
@@ -76,18 +59,13 @@ class WorkOrderDetailPage extends StatelessWidget {
 
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => InspectionFormPage(
-                    bloc: bloc,
-                  ),
+                  builder: (_) =>
+                      InspectionFormPage(bloc: bloc, workOrder: workOrder),
                 ),
               );
             },
-            icon: const Icon(
-              Icons.assignment,
-            ),
-            label: const Text(
-              'Iniciar inspeção',
-            ),
+            icon: const Icon(Icons.assignment),
+            label: const Text('Iniciar inspeção'),
           ),
         ],
       ),
@@ -99,34 +77,18 @@ class _InfoSection extends StatelessWidget {
   final String title;
   final String value;
 
-  const _InfoSection({
-    required this.title,
-    required this.value,
-  });
+  const _InfoSection({required this.title, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(
-        bottom: 16,
-      ),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: Theme.of(context)
-                .textTheme
-                .labelLarge,
-          ),
+          Text(title, style: Theme.of(context).textTheme.labelLarge),
           const SizedBox(height: 4),
-          Text(
-            value,
-            style: Theme.of(context)
-                .textTheme
-                .bodyLarge,
-          ),
+          Text(value, style: Theme.of(context).textTheme.bodyLarge),
         ],
       ),
     );

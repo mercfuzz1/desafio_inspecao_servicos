@@ -13,18 +13,13 @@ class AuthRepositoryImpl implements AuthRepository {
   });
 
   @override
-  Future<User> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<User> login({required String email, required String password}) async {
     final response = await remoteDataSource.login(
       email: email,
       password: password,
     );
 
-    await secureStorage.saveAccessToken(
-      response.accessToken,
-    );
+    await secureStorage.saveAccessToken(response.accessToken);
 
     return response.user;
   }
@@ -40,7 +35,6 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       return await remoteDataSource.getMe();
     } catch (_) {
-      await secureStorage.deleteAccessToken();
       return null;
     }
   }

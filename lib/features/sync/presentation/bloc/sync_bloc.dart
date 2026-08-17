@@ -26,18 +26,33 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
         });
   }
 
-  Future<void> _onSyncRetryFailedRequested(
-    SyncRetryFailedRequested event,
+  Future<void> _onSyncRequested(
+    SyncRequested event,
     Emitter<SyncState> emit,
   ) async {
     if (state.status == SyncStatus.syncing) {
       return;
     }
 
+    emit(state.copyWith(status: SyncStatus.initial, clearErrorMessage: true));
+
+    final isConnected = await connectivityService.isConnected;
+
+    if (!isConnected) {
+      emit(
+        state.copyWith(
+          status: SyncStatus.failure,
+          errorMessage: 'Sem conexão com a internet.',
+        ),
+      );
+
+      return;
+    }
+
     emit(state.copyWith(status: SyncStatus.syncing, clearErrorMessage: true));
 
     try {
-      await syncService.retryFailed();
+      await syncService.sync();
 
       emit(state.copyWith(status: SyncStatus.success, clearErrorMessage: true));
     } catch (error) {
@@ -50,8 +65,8 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
     }
   }
 
-  Future<void> _onSyncRequested(
-    SyncRequested event,
+  Future<void> _onSyncRetryFailedRequested(
+    SyncRetryFailedRequested event,
     Emitter<SyncState> emit,
   ) async {
     if (state.status == SyncStatus.syncing) {
@@ -61,13 +76,20 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
     final isConnected = await connectivityService.isConnected;
 
     if (!isConnected) {
+      emit(
+        state.copyWith(
+          status: SyncStatus.failure,
+          errorMessage: 'Sem conexão com a internet.',
+        ),
+      );
+
       return;
     }
 
     emit(state.copyWith(status: SyncStatus.syncing, clearErrorMessage: true));
 
     try {
-      await syncService.sync();
+      await syncService.retryFailed();
 
       emit(state.copyWith(status: SyncStatus.success, clearErrorMessage: true));
     } catch (error) {
