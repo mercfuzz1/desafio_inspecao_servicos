@@ -29,9 +29,7 @@ class WorkOrderCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       workOrder.code,
-                      style: Theme.of(context)
-                          .textTheme
-                          .labelLarge,
+                      style: Theme.of(context).textTheme.labelLarge,
                     ),
                   ),
                   _PriorityBadge(
@@ -39,7 +37,9 @@ class WorkOrderCard extends StatelessWidget {
                   ),
                 ],
               ),
+
               const SizedBox(height: 8),
+
               Text(
                 workOrder.title,
                 style: Theme.of(context)
@@ -49,7 +49,9 @@ class WorkOrderCard extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
               ),
+
               const SizedBox(height: 8),
+
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -59,13 +61,13 @@ class WorkOrderCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Expanded(
-                    child: Text(
-                      workOrder.address,
-                    ),
+                    child: Text(workOrder.address),
                   ),
                 ],
               ),
+
               const SizedBox(height: 12),
+
               _StatusBadge(
                 status: workOrder.status,
               ),
@@ -84,13 +86,65 @@ class _PriorityBadge extends StatelessWidget {
     required this.priority,
   });
 
+  String _translatePriority() {
+    switch (priority.toLowerCase()) {
+      case 'low':
+        return 'Baixa';
+
+      case 'medium':
+        return 'Média';
+
+      case 'high':
+        return 'Alta';
+
+      case 'critical':
+        return 'Crítica';
+
+      default:
+        return priority;
+    }
+  }
+
+  Color _getColor() {
+    switch (priority.toLowerCase()) {
+      case 'low':
+        return Colors.green;
+
+      case 'medium':
+        return Colors.orange;
+
+      case 'high':
+        return Colors.deepOrange;
+
+      case 'critical':
+        return Colors.red;
+
+      default:
+        return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Chip(
-      label: Text(
-        priority.toUpperCase(),
+    final color = _getColor();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 5,
       ),
-      visualDensity: VisualDensity.compact,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        _translatePriority(),
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }
@@ -102,15 +156,65 @@ class _StatusBadge extends StatelessWidget {
     required this.status,
   });
 
+  String _translateStatus() {
+    switch (status.toLowerCase()) {
+      case 'open':
+        return 'Aberta';
+
+      case 'in_progress':
+        return 'Em andamento';
+
+      case 'pending':
+        return 'Pendente';
+
+      case 'completed':
+        return 'Concluída';
+
+      case 'cancelled':
+        return 'Cancelada';
+
+      case 'closed':
+        return 'Fechada';
+
+      case 'done':
+        return 'Finalizada';
+
+      default:
+        return status;
+    }
+  }
+
+  Color _statusColor() {
+    switch (status.toLowerCase()) {
+      case 'open':
+      case 'in_progress':
+        return Colors.blue;
+
+      case 'pending':
+        return Colors.orange;
+
+      case 'completed':
+      case 'closed':
+        return Colors.green;
+
+      case 'cancelled':
+        return Colors.red;
+
+      default:
+        return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Chip(
-      avatar: const Icon(
+      avatar: Icon(
         Icons.circle,
         size: 10,
+        color: _statusColor(),
       ),
       label: Text(
-        status.toUpperCase(),
+        _translateStatus().toUpperCase(),
       ),
       visualDensity: VisualDensity.compact,
     );
