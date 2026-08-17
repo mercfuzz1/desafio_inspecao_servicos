@@ -1,29 +1,24 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/repositories/work_orders_repository.dart';
 import 'work_orders_event.dart';
 import 'work_orders_state.dart';
 
-class WorkOrdersBloc
-    extends Bloc<WorkOrdersEvent, WorkOrdersState> {
+class WorkOrdersBloc extends Bloc<WorkOrdersEvent, WorkOrdersState> {
   final WorkOrdersRepository repository;
 
-  WorkOrdersBloc({
-    required this.repository,
-  }) : super(const WorkOrdersState()) {
-    on<WorkOrdersRequested>(_onRequested);
-    on<WorkOrdersRefreshRequested>(_onRefreshRequested);
+  WorkOrdersBloc({required this.repository}) : super(const WorkOrdersState()) {
+    on<WorkOrdersRequested>(_onWorkOrdersRequested);
+    on<WorkOrdersRefreshRequested>(_onWorkOrdersRefreshRequested);
   }
 
-  Future<void> _onRequested(
+  Future<void> _onWorkOrdersRequested(
     WorkOrdersRequested event,
     Emitter<WorkOrdersState> emit,
   ) async {
     emit(
-      state.copyWith(
-        status: WorkOrdersStatus.loading,
-        errorMessage: null,
-      ),
+      state.copyWith(status: WorkOrdersStatus.loading, clearErrorMessage: true),
     );
 
     try {
@@ -34,6 +29,7 @@ class WorkOrdersBloc
           state.copyWith(
             status: WorkOrdersStatus.empty,
             workOrders: workOrders,
+            clearErrorMessage: true,
           ),
         );
 
@@ -44,26 +40,27 @@ class WorkOrdersBloc
         state.copyWith(
           status: WorkOrdersStatus.success,
           workOrders: workOrders,
+          clearErrorMessage: true,
         ),
       );
-    } catch (e) {
+    } catch (error) {
       emit(
         state.copyWith(
           status: WorkOrdersStatus.failure,
-          errorMessage: e.toString(),
+          errorMessage: _getErrorMessage(error),
         ),
       );
     }
   }
 
-  Future<void> _onRefreshRequested(
+  Future<void> _onWorkOrdersRefreshRequested(
     WorkOrdersRefreshRequested event,
     Emitter<WorkOrdersState> emit,
   ) async {
     emit(
       state.copyWith(
         status: WorkOrdersStatus.refreshing,
-        errorMessage: null,
+        clearErrorMessage: true,
       ),
     );
 
@@ -75,6 +72,7 @@ class WorkOrdersBloc
           state.copyWith(
             status: WorkOrdersStatus.empty,
             workOrders: workOrders,
+            clearErrorMessage: true,
           ),
         );
 
@@ -85,18 +83,61 @@ class WorkOrdersBloc
         state.copyWith(
           status: WorkOrdersStatus.success,
           workOrders: workOrders,
+          clearErrorMessage: true,
         ),
       );
-    } catch (e) {
-      // mantém os dados anteriores caso o refresh falhe
+    } catch (error) {
       emit(
         state.copyWith(
-          status: state.workOrders.isEmpty
-              ? WorkOrdersStatus.failure
-              : WorkOrdersStatus.success,
-          errorMessage: e.toString(),
+          status: WorkOrdersStatus.success,
+          errorMessage: _getErrorMessage(error),
         ),
       );
     }
+  }
+
+  String _getErrorMessage(Object error) {
+    if (error is DioException) {
+      switch (error.type) {
+        case DioExceptionType.connectionError:
+          return 'Sem conexão com a internet.';
+
+        case DioExceptionType.connectionTimeout:
+        case DioExceptionType.receiveTimeout:
+        case DioExceptionType.sendTimeout:
+        case DioExceptionType.transformTimeout:
+          return 'A conexão demorou muito para responder.';
+
+        case DioExceptionType.badResponse:
+          final statusCode = error.response?.statusCode;
+
+          if (statusCode == 401) {
+            return 'Sua sessão expirou. Faça login novamente.';
+          }
+
+          if (statusCode != null && statusCode >= 500) {
+            return 'O servidor está indisponível no momento.';
+          }
+
+          final message = error.response?.data?['message'];
+
+          if (message is String && message.isNotEmpty) {
+            return message;
+          }
+
+          return 'Não foi possível atualizar as ordens de serviço.';
+
+        case DioExceptionType.cancel:
+          return 'A atualização foi cancelada.';
+
+        case DioExceptionType.badCertificate:
+          return 'Não foi possível estabelecer uma conexão segura.';
+
+        case DioExceptionType.unknown:
+          return 'Não foi possível conectar ao servidor.';
+      }
+    }
+
+    return 'Ocorreu um erro ao carregar as ordens de serviço.';
   }
 }
