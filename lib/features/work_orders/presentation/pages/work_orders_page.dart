@@ -18,7 +18,6 @@ import '../widgets/work_order_card.dart';
 import 'work_order_detail_page.dart';
 import '../../../../core/theme/theme_controller.dart';
 
-
 class WorkOrdersPage extends StatefulWidget {
   final InspectionsRepository inspectionsRepository;
   final ThemeController themeController;
@@ -51,270 +50,238 @@ class _WorkOrdersPageState extends State<WorkOrdersPage> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-@override
-Widget build(BuildContext context) {
-  return MultiBlocListener(
-    listeners: [
-      BlocListener<SyncBloc, SyncState>(
-        listener: (context, state) {
-          if (state.status == SyncStatus.success) {
-            _showMessage(
-              'Suas inspeções estão sincronizadas.',
-            );
-          }
+  @override
+  Widget build(BuildContext context) {
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<SyncBloc, SyncState>(
+          listener: (context, state) {
+            if (state.status == SyncStatus.success) {
+              _showMessage('Suas inspeções estão sincronizadas.');
+            }
 
-          if (state.status == SyncStatus.failure) {
-            _showMessage(
-              state.errorMessage ??
-                  'Algo deu errado na sincronização.',
-            );
-          }
-        },
-      ),
-    ],
-    child: Scaffold(
-      appBar: AppBar(
-        title: const Text('Ordens de Serviço'),
-
-        actions: [
-          // ==================================================
-          // SINCRONIZAÇÃO
-          // ==================================================
-
-          BlocBuilder<SyncBloc, SyncState>(
-            builder: (context, state) {
-              if (state.status == SyncStatus.syncing) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 16,
-                  ),
-                  child: Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                      ),
-                    ),
-                  ),
-                );
-              }
-
-              return IconButton(
-                onPressed: () {
-                  context.read<SyncBloc>().add(
-                    const SyncRequested(),
-                  );
-                },
-                icon: const Icon(
-                  Icons.sync,
-                ),
-                tooltip: 'Sincronizar',
+            if (state.status == SyncStatus.failure) {
+              _showMessage(
+                state.errorMessage ?? 'Algo deu errado na sincronização.',
               );
-            },
-          ),
-
-          // ==================================================
-          // MENU
-          // ==================================================
-
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              // ------------------------------------------------
-              // HISTÓRICO
-              // ------------------------------------------------
-
-              if (value == 'history') {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        const InspectionsHistoryPage(),
-                  ),
-                );
-              }
-
-              // ------------------------------------------------
-              // TEMA
-              // ------------------------------------------------
-
-              if (value == 'theme') {
-                widget.themeController.toggleTheme();
-              }
-
-              // ------------------------------------------------
-              // LOGOUT
-              // ------------------------------------------------
-
-              if (value == 'logout') {
-                context.read<AuthBloc>().add(
-                  const AuthLogoutRequested(),
-                );
-              }
-            },
-
-            itemBuilder: (context) => [
-              const PopupMenuItem<String>(
-                value: 'history',
-                child: ListTile(
-                  leading: Icon(
-                    Icons.history,
-                  ),
-                  title: Text(
-                    'Histórico de inspeções',
-                  ),
+            }
+          },
+        ),
+      ],
+      child: Scaffold(
+        appBar: AppBar(
+          title: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(
+                  'assets/images/orbytis_logo.png',
+                  height: 32,
+                  width: 32,
+                  fit: BoxFit.cover,
                 ),
               ),
-
-              PopupMenuItem<String>(
-                value: 'theme',
-                child: ListTile(
-                  leading: Icon(
-                    widget.themeController.isDark
-                        ? Icons.light_mode
-                        : Icons.dark_mode,
-                  ),
-                  title: Text(
-                    widget.themeController.isDark
-                        ? 'Modo claro'
-                        : 'Modo escuro',
-                  ),
-                ),
-              ),
-
-              const PopupMenuDivider(),
-
-              const PopupMenuItem<String>(
-                value: 'logout',
-                child: ListTile(
-                  leading: Icon(
-                    Icons.logout,
-                  ),
-                  title: Text(
-                    'Sair',
-                  ),
-                ),
-              ),
+              const SizedBox(width: 12),
+              const Text('Ordens de Serviço'),
             ],
           ),
-        ],
-      ),
+          actions: [
+            // ==================================================
+            // SINCRONIZAÇÃO
+            // ==================================================
 
-      // ======================================================
-      // WORK ORDERS
-      // ======================================================
-
-      body: BlocBuilder<WorkOrdersBloc, WorkOrdersState>(
-        builder: (context, state) {
-          switch (state.status) {
-            case WorkOrdersStatus.initial:
-            case WorkOrdersStatus.loading:
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
-
-            case WorkOrdersStatus.empty:
-              return _EmptyState(
-                onRetry: () {
-                  context.read<WorkOrdersBloc>().add(
-                    const WorkOrdersRequested(),
+            BlocBuilder<SyncBloc, SyncState>(
+              builder: (context, state) {
+                if (state.status == SyncStatus.syncing) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
                   );
-                },
-              );
+                }
 
-            case WorkOrdersStatus.failure:
-              return _ErrorState(
-                message: state.errorMessage,
-                onRetry: () {
-                  context.read<WorkOrdersBloc>().add(
-                    const WorkOrdersRequested(),
+                return IconButton(
+                  onPressed: () {
+                    context.read<SyncBloc>().add(const SyncRequested());
+                  },
+                  icon: const Icon(Icons.sync),
+                  tooltip: 'Sincronizar',
+                );
+              },
+            ),
+
+            // ==================================================
+            // MENU
+            // ==================================================
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                // ------------------------------------------------
+                // HISTÓRICO
+                // ------------------------------------------------
+
+                if (value == 'history') {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const InspectionsHistoryPage(),
+                    ),
                   );
-                },
-              );
+                }
 
-            case WorkOrdersStatus.refreshing:
-            case WorkOrdersStatus.success:
-              return RefreshIndicator(
-                onRefresh: () async {
-                  context.read<WorkOrdersBloc>().add(
-                    const WorkOrdersRefreshRequested(),
-                  );
+                // ------------------------------------------------
+                // TEMA
+                // ------------------------------------------------
 
-                  await context
-                      .read<WorkOrdersBloc>()
-                      .stream
-                      .firstWhere(
-                        (state) =>
-                            state.status ==
-                                WorkOrdersStatus.success ||
-                            state.status ==
-                                WorkOrdersStatus.empty ||
-                            state.status ==
-                                WorkOrdersStatus.failure,
-                      );
+                if (value == 'theme') {
+                  widget.themeController.toggleTheme();
+                }
 
-                  if (!mounted) {
-                    return;
-                  }
+                // ------------------------------------------------
+                // LOGOUT
+                // ------------------------------------------------
 
-                  final currentState =
-                      context
-                          .read<WorkOrdersBloc>()
-                          .state;
+                if (value == 'logout') {
+                  context.read<AuthBloc>().add(const AuthLogoutRequested());
+                }
+              },
 
-                  if (currentState.errorMessage != null) {
-                    _showMessage(
-                      currentState.errorMessage!,
-                    );
-                  } else if (currentState.status ==
-                      WorkOrdersStatus.success) {
-                    _showMessage(
-                      'Ordens de serviço atualizadas com sucesso.',
-                    );
-                  } else if (currentState.status ==
-                      WorkOrdersStatus.empty) {
-                    _showMessage(
-                      'A lista foi atualizada, mas nenhuma ordem de serviço foi encontrada.',
-                    );
-                  }
-                },
+              itemBuilder: (context) => [
+                const PopupMenuItem<String>(
+                  value: 'history',
+                  child: ListTile(
+                    leading: Icon(Icons.history),
+                    title: Text('Histórico de inspeções'),
+                  ),
+                ),
 
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  physics:
-                      const AlwaysScrollableScrollPhysics(),
-                  itemCount:
-                      state.workOrders.length,
-                  itemBuilder:
-                      (context, index) {
-                    final workOrder =
-                        state.workOrders[index];
+                PopupMenuItem<String>(
+                  value: 'theme',
+                  child: ListTile(
+                    leading: Icon(
+                      widget.themeController.isDark
+                          ? Icons.light_mode
+                          : Icons.dark_mode,
+                    ),
+                    title: Text(
+                      widget.themeController.isDark
+                          ? 'Modo claro'
+                          : 'Modo escuro',
+                    ),
+                  ),
+                ),
 
-                    return WorkOrderCard(
-                      workOrder: workOrder,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                WorkOrderDetailPage(
-                              workOrder:
-                                  workOrder,
-                              inspectionsRepository:
-                                  widget
-                                      .inspectionsRepository,
-                            ),
-                          ),
-                        );
-                      },
+                const PopupMenuDivider(),
+
+                const PopupMenuItem<String>(
+                  value: 'logout',
+                  child: ListTile(
+                    leading: Icon(Icons.logout),
+                    title: Text('Sair'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+
+        // ======================================================
+        // WORK ORDERS
+        // ======================================================
+        body: BlocBuilder<WorkOrdersBloc, WorkOrdersState>(
+          builder: (context, state) {
+            switch (state.status) {
+              case WorkOrdersStatus.initial:
+              case WorkOrdersStatus.loading:
+                return const Center(child: CircularProgressIndicator());
+
+              case WorkOrdersStatus.empty:
+                return _EmptyState(
+                  onRetry: () {
+                    context.read<WorkOrdersBloc>().add(
+                      const WorkOrdersRequested(),
                     );
                   },
-                ),
-              );
-          }
-        },
+                );
+
+              case WorkOrdersStatus.failure:
+                return _ErrorState(
+                  message: state.errorMessage,
+                  onRetry: () {
+                    context.read<WorkOrdersBloc>().add(
+                      const WorkOrdersRequested(),
+                    );
+                  },
+                );
+
+              case WorkOrdersStatus.refreshing:
+              case WorkOrdersStatus.success:
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    context.read<WorkOrdersBloc>().add(
+                      const WorkOrdersRefreshRequested(),
+                    );
+
+                    await context.read<WorkOrdersBloc>().stream.firstWhere(
+                      (state) =>
+                          state.status == WorkOrdersStatus.success ||
+                          state.status == WorkOrdersStatus.empty ||
+                          state.status == WorkOrdersStatus.failure,
+                    );
+
+                    if (!mounted) {
+                      return;
+                    }
+
+                    final currentState = context.read<WorkOrdersBloc>().state;
+
+                    if (currentState.errorMessage != null) {
+                      _showMessage(currentState.errorMessage!);
+                    } else if (currentState.status ==
+                        WorkOrdersStatus.success) {
+                      _showMessage(
+                        'Ordens de serviço atualizadas com sucesso.',
+                      );
+                    } else if (currentState.status == WorkOrdersStatus.empty) {
+                      _showMessage(
+                        'A lista foi atualizada, mas nenhuma ordem de serviço foi encontrada.',
+                      );
+                    }
+                  },
+
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: state.workOrders.length,
+                    itemBuilder: (context, index) {
+                      final workOrder = state.workOrders[index];
+
+                      return WorkOrderCard(
+                        workOrder: workOrder,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => WorkOrderDetailPage(
+                                workOrder: workOrder,
+                                inspectionsRepository:
+                                    widget.inspectionsRepository,
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                );
+            }
+          },
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 class _EmptyState extends StatelessWidget {
