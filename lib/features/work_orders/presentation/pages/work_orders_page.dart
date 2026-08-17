@@ -221,11 +221,11 @@ class _WorkOrdersPageState extends State<WorkOrdersPage> {
               case WorkOrdersStatus.success:
                 return RefreshIndicator(
                   onRefresh: () async {
-                    context.read<WorkOrdersBloc>().add(
-                      const WorkOrdersRefreshRequested(),
-                    );
+                    final workOrdersBloc = context.read<WorkOrdersBloc>();
 
-                    await context.read<WorkOrdersBloc>().stream.firstWhere(
+                    workOrdersBloc.add(const WorkOrdersRefreshRequested());
+
+                    await workOrdersBloc.stream.firstWhere(
                       (state) =>
                           state.status == WorkOrdersStatus.success ||
                           state.status == WorkOrdersStatus.empty ||
@@ -236,7 +236,7 @@ class _WorkOrdersPageState extends State<WorkOrdersPage> {
                       return;
                     }
 
-                    final currentState = context.read<WorkOrdersBloc>().state;
+                    final currentState = workOrdersBloc.state;
 
                     if (currentState.errorMessage != null) {
                       _showMessage(currentState.errorMessage!);
