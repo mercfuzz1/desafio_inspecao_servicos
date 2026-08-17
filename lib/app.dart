@@ -20,6 +20,7 @@ import 'features/work_orders/data/datasources/work_orders_remote_data_source.dar
 import 'features/work_orders/data/repositories/work_orders_repository_impl.dart';
 import 'features/work_orders/presentation/bloc/work_orders_bloc.dart';
 import 'features/work_orders/presentation/pages/work_orders_page.dart';
+import 'features/work_orders/data/datasources/work_orders_local_data_source.dart';
 
 import 'features/inspections/data/datasources/inspections_local_data_source.dart';
 import 'features/inspections/data/datasources/inspections_remote_data_source.dart';
@@ -32,9 +33,7 @@ import 'features/sync/domain/services/sync_service.dart';
 import 'features/sync/presentation/bloc/sync_bloc.dart';
 
 class App extends StatefulWidget {
-  const App({
-    super.key,
-  });
+  const App({super.key});
 
   @override
   State<App> createState() => _AppState();
@@ -65,82 +64,65 @@ class _AppState extends State<App> {
 
     final secureStorage = SecureStorage();
 
-    final dioClient = DioClient(
-      secureStorage: secureStorage,
-    );
+    final dioClient = DioClient(secureStorage: secureStorage);
 
     final database = AppDatabase();
 
+    final workOrdersDao = database.workOrdersDao;
+    
     // ==================================================
     // AUTH
     // ==================================================
 
-    final authRemoteDataSource =
-        AuthRemoteDataSource(
-      dioClient,
-    );
+    final authRemoteDataSource = AuthRemoteDataSource(dioClient);
 
-    final AuthRepository authRepository =
-        AuthRepositoryImpl(
-      remoteDataSource:
-          authRemoteDataSource,
-      secureStorage:
-          secureStorage,
+    final AuthRepository authRepository = AuthRepositoryImpl(
+      remoteDataSource: authRemoteDataSource,
+      secureStorage: secureStorage,
     );
 
     // ==================================================
     // WORK ORDERS
     // ==================================================
 
-    final workOrdersRemoteDataSource =
-        WorkOrdersRemoteDataSource(
-      dioClient,
+    final workOrdersRemoteDataSource = WorkOrdersRemoteDataSource(dioClient);
+
+    final workOrdersLocalDataSource = WorkOrdersLocalDataSource(
+      dao: workOrdersDao,
     );
 
-    final workOrdersRepository =
-        WorkOrdersRepositoryImpl(
-      remoteDataSource:
-          workOrdersRemoteDataSource,
+    final workOrdersRepository = WorkOrdersRepositoryImpl(
+      remoteDataSource: workOrdersRemoteDataSource,
+      localDataSource: workOrdersLocalDataSource,
     );
 
     // ==================================================
     // INSPECTIONS
     // ==================================================
 
-    final inspectionsDao =
-        database.inspectionsDao;
+    final inspectionsDao = database.inspectionsDao;
 
-    final inspectionsLocalDataSource =
-        InspectionsLocalDataSource(
+    final inspectionsLocalDataSource = InspectionsLocalDataSource(
       dao: inspectionsDao,
     );
 
-    final inspectionsRemoteDataSource =
-        InspectionsRemoteDataSource(
-      dioClient,
-    );
+    final inspectionsRemoteDataSource = InspectionsRemoteDataSource(dioClient);
 
-    final InspectionsRepository
-        inspectionsRepository =
+    final InspectionsRepository inspectionsRepository =
         InspectionsRepositoryImpl(
-      localDataSource:
-          inspectionsLocalDataSource,
-      remoteDataSource:
-          inspectionsRemoteDataSource,
-    );
+          localDataSource: inspectionsLocalDataSource,
+          remoteDataSource: inspectionsRemoteDataSource,
+        );
 
     // ==================================================
     // SYNC
     // ==================================================
 
-    final SyncService syncService =
-        SyncServiceImpl(
-      inspectionsRepository:
-          inspectionsRepository,
+    final SyncService syncService = SyncServiceImpl(
+      inspectionsRepository: inspectionsRepository,
     );
 
-    final connectivityService =
-        ConnectivityService();
+    final connectivityService = ConnectivityService();
 
     // ==================================================
     // PROVIDERS
@@ -148,14 +130,11 @@ class _AppState extends State<App> {
 
     return MultiRepositoryProvider(
       providers: [
-        RepositoryProvider<
-            InspectionsRepository>.value(
+        RepositoryProvider<InspectionsRepository>.value(
           value: inspectionsRepository,
         ),
 
-        RepositoryProvider<SyncService>.value(
-          value: syncService,
-        ),
+        RepositoryProvider<SyncService>.value(value: syncService),
       ],
 
       child: MultiBlocProvider(
@@ -166,101 +145,68 @@ class _AppState extends State<App> {
 
           BlocProvider(
             create: (_) =>
-                AuthBloc(
-                  repository:
-                      authRepository,
-                )..add(
-                    const AuthStarted(),
-                  ),
+                AuthBloc(repository: authRepository)..add(const AuthStarted()),
           ),
 
           // ==================================================
           // WORK ORDERS BLOC
           // ==================================================
-
           BlocProvider(
-            create: (_) =>
-                WorkOrdersBloc(
-                  repository:
-                      workOrdersRepository,
-                ),
+            create: (_) => WorkOrdersBloc(repository: workOrdersRepository),
           ),
 
           // ==================================================
           // SYNC BLOC
           // ==================================================
-
           BlocProvider(
-            create: (_) =>
-                SyncBloc(
-                  syncService:
-                      syncService,
-                  connectivityService:
-                      connectivityService,
-                ),
+            create: (_) => SyncBloc(
+              syncService: syncService,
+              connectivityService: connectivityService,
+            ),
           ),
 
           // ==================================================
           // INSPECTIONS HISTORY BLOC
           // ==================================================
-
           BlocProvider(
             create: (_) =>
-                InspectionsHistoryBloc(
-                  repository:
-                      inspectionsRepository,
-                ),
+                InspectionsHistoryBloc(repository: inspectionsRepository),
           ),
         ],
 
         // ==================================================
         // MATERIAL APP
         // ==================================================
-
         child: AnimatedBuilder(
           animation: themeController,
 
-          builder: (
-            context,
-            _,
-          ) {
+          builder: (context, _) {
             return MaterialApp(
-              debugShowCheckedModeBanner:
-                  false,
+              debugShowCheckedModeBanner: false,
 
               title: 'Field Inspection',
 
               // ==================================================
               // THEME
               // ==================================================
-
               theme: AppTheme.light,
 
               darkTheme: AppTheme.dark,
 
-              themeMode:
-                  themeController.themeMode,
+              themeMode: themeController.themeMode,
 
               // ==================================================
               // HOME
               // ==================================================
-
-              home: BlocBuilder<
-                  AuthBloc,
-                  AuthState>(
-                builder: (
-                  context,
-                  state,
-                ) {
+              home: BlocBuilder<AuthBloc, AuthState>(
+                builder: (context, state) {
                   switch (state.status) {
                     case AuthStatus.authenticated:
                       return WorkOrdersPage(
-                        inspectionsRepository:
-                            context.read<
-                                InspectionsRepository>(),
+                        inspectionsRepository: context
+                            .read<InspectionsRepository>(),
 
-                        themeController:
-                            themeController,
+                        themeController: themeController,
                       );
 
                     case AuthStatus.unauthenticated:
@@ -270,10 +216,7 @@ class _AppState extends State<App> {
                     case AuthStatus.initial:
                     case AuthStatus.loading:
                       return const Scaffold(
-                        body: Center(
-                          child:
-                              CircularProgressIndicator(),
-                        ),
+                        body: Center(child: CircularProgressIndicator()),
                       );
                   }
                 },

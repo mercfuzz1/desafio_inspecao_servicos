@@ -8,7 +8,9 @@ import 'work_orders_state.dart';
 class WorkOrdersBloc extends Bloc<WorkOrdersEvent, WorkOrdersState> {
   final WorkOrdersRepository repository;
 
-  WorkOrdersBloc({required this.repository}) : super(const WorkOrdersState()) {
+  WorkOrdersBloc({
+    required this.repository,
+  }) : super(const WorkOrdersState()) {
     on<WorkOrdersRequested>(_onWorkOrdersRequested);
     on<WorkOrdersRefreshRequested>(_onWorkOrdersRefreshRequested);
   }
@@ -17,8 +19,13 @@ class WorkOrdersBloc extends Bloc<WorkOrdersEvent, WorkOrdersState> {
     WorkOrdersRequested event,
     Emitter<WorkOrdersState> emit,
   ) async {
+    final hasExistingWorkOrders = state.workOrders.isNotEmpty;
+
     emit(
-      state.copyWith(status: WorkOrdersStatus.loading, clearErrorMessage: true),
+      state.copyWith(
+        status: WorkOrdersStatus.loading,
+        clearErrorMessage: true,
+      ),
     );
 
     try {
@@ -44,10 +51,23 @@ class WorkOrdersBloc extends Bloc<WorkOrdersEvent, WorkOrdersState> {
         ),
       );
     } catch (error) {
+      final errorMessage = _getErrorMessage(error);
+
+      if (hasExistingWorkOrders) {
+        emit(
+          state.copyWith(
+            status: WorkOrdersStatus.success,
+            errorMessage: errorMessage,
+          ),
+        );
+
+        return;
+      }
+
       emit(
         state.copyWith(
           status: WorkOrdersStatus.failure,
-          errorMessage: _getErrorMessage(error),
+          errorMessage: errorMessage,
         ),
       );
     }
@@ -90,6 +110,11 @@ class WorkOrdersBloc extends Bloc<WorkOrdersEvent, WorkOrdersState> {
       emit(
         state.copyWith(
           status: WorkOrdersStatus.success,
+          // IMPORTANTE:
+          // não alteramos workOrders.
+          //
+          // Portanto, as OS que já estavam na tela continuam
+          // disponíveis mesmo quando a atualização falha.
           errorMessage: _getErrorMessage(error),
         ),
       );
