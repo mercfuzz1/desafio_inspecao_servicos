@@ -6,11 +6,7 @@ class WorkOrderCard extends StatelessWidget {
   final WorkOrder workOrder;
   final VoidCallback? onTap;
 
-  const WorkOrderCard({
-    super.key,
-    required this.workOrder,
-    this.onTap,
-  });
+  const WorkOrderCard({super.key, required this.workOrder, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -32,8 +28,12 @@ class WorkOrderCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.labelLarge,
                     ),
                   ),
-                  _PriorityBadge(
-                    priority: workOrder.priority,
+                  _PriorityBadge(priority: workOrder.priority),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.chevron_right,
+                    size: 22,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ],
               ),
@@ -42,12 +42,9 @@ class WorkOrderCard extends StatelessWidget {
 
               Text(
                 workOrder.title,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
 
               const SizedBox(height: 8),
@@ -55,22 +52,15 @@ class WorkOrderCard extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.location_on_outlined,
-                    size: 18,
-                  ),
+                  const Icon(Icons.location_on_outlined, size: 18),
                   const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(workOrder.address),
-                  ),
+                  Expanded(child: Text(workOrder.address)),
                 ],
               ),
 
               const SizedBox(height: 12),
 
-              _StatusBadge(
-                status: workOrder.status,
-              ),
+              _StatusBadge(status: workOrder.status),
             ],
           ),
         ),
@@ -82,9 +72,7 @@ class WorkOrderCard extends StatelessWidget {
 class _PriorityBadge extends StatelessWidget {
   final String priority;
 
-  const _PriorityBadge({
-    required this.priority,
-  });
+  const _PriorityBadge({required this.priority});
 
   String _translatePriority() {
     switch (priority.toLowerCase()) {
@@ -129,10 +117,7 @@ class _PriorityBadge extends StatelessWidget {
     final color = _getColor();
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 5,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
@@ -152,9 +137,7 @@ class _PriorityBadge extends StatelessWidget {
 class _StatusBadge extends StatelessWidget {
   final String status;
 
-  const _StatusBadge({
-    required this.status,
-  });
+  const _StatusBadge({required this.status});
 
   String _translateStatus() {
     switch (status.toLowerCase()) {
@@ -208,14 +191,8 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Chip(
-      avatar: Icon(
-        Icons.circle,
-        size: 10,
-        color: _statusColor(),
-      ),
-      label: Text(
-        _translateStatus().toUpperCase(),
-      ),
+      avatar: Icon(Icons.circle, size: 10, color: _statusColor()),
+      label: Text(_translateStatus().toUpperCase()),
       visualDensity: VisualDensity.compact,
     );
   }
