@@ -56,6 +56,15 @@ class InspectionLocationChanged extends InspectionFormEvent {
       ];
 }
 
+final class InspectionLocationLoadingStarted
+    extends InspectionFormEvent {
+  const InspectionLocationLoadingStarted();
+}
+
+final class InspectionLocationLoadingFinished
+    extends InspectionFormEvent {
+  const InspectionLocationLoadingFinished();
+}
 class SaveInspectionDraft extends InspectionFormEvent {
   const SaveInspectionDraft();
 }

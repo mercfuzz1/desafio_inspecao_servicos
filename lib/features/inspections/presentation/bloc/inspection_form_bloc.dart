@@ -25,6 +25,10 @@ class InspectionFormBloc
     on<SaveInspectionDraft>(_onSaveDraft);
 
     on<CompleteInspection>(_onComplete);
+
+    on<InspectionLocationLoadingStarted>(_onLocationLoadingStarted);
+
+    on<InspectionLocationLoadingFinished>(_onLocationLoadingFinished);
   }
 
   void _onObservationChanged(
@@ -53,6 +57,20 @@ class InspectionFormBloc
     Emitter<InspectionFormState> emit,
   ) {
     emit(state.copyWith(latitude: event.latitude, longitude: event.longitude));
+  }
+
+  void _onLocationLoadingStarted(
+    InspectionLocationLoadingStarted event,
+    Emitter<InspectionFormState> emit,
+  ) {
+    emit(state.copyWith(isGettingLocation: true));
+  }
+
+  void _onLocationLoadingFinished(
+    InspectionLocationLoadingFinished event,
+    Emitter<InspectionFormState> emit,
+  ) {
+    emit(state.copyWith(isGettingLocation: false));
   }
 
   Future<void> _onSaveDraft(

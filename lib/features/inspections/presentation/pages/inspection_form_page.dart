@@ -23,11 +23,14 @@ class InspectionFormPage extends StatefulWidget {
       _InspectionFormPageState();
 }
 
-class _InspectionFormPageState
-    extends State<InspectionFormPage> {
+class _InspectionFormPageState extends State<InspectionFormPage> {
   final ImagePicker _imagePicker = ImagePicker();
 
   InspectionFormBloc get bloc => widget.bloc;
+
+  // ============================================================
+  // FOTO
+  // ============================================================
 
   Future<void> _capturePhoto() async {
     try {
@@ -55,15 +58,37 @@ class _InspectionFormPageState
     }
   }
 
+  // ============================================================
+  // LOCALIZAÇÃO
+  // ============================================================
+
   Future<void> _captureLocation() async {
+    // Impede múltiplas solicitações simultâneas.
+    if (bloc.state.isGettingLocation) {
+      return;
+    }
+
+    bloc.add(
+      const InspectionLocationLoadingStarted(),
+    );
+
     try {
       final serviceEnabled =
           await Geolocator.isLocationServiceEnabled();
 
       if (!serviceEnabled) {
+        bloc.add(
+          const InspectionLocationLoadingFinished(),
+        );
+
+        if (!mounted) {
+          return;
+        }
+
         _showError(
           'Ative o serviço de localização do dispositivo.',
         );
+
         return;
       }
 
@@ -76,25 +101,41 @@ class _InspectionFormPageState
       }
 
       if (permission == LocationPermission.denied) {
+        bloc.add(
+          const InspectionLocationLoadingFinished(),
+        );
+
+        if (!mounted) {
+          return;
+        }
+
         _showError(
           'Permissão de localização negada.',
         );
+
         return;
       }
 
-      if (permission ==
-          LocationPermission.deniedForever) {
+      if (permission == LocationPermission.deniedForever) {
+        bloc.add(
+          const InspectionLocationLoadingFinished(),
+        );
+
+        if (!mounted) {
+          return;
+        }
+
         _showError(
           'Permissão de localização bloqueada. '
           'Ative-a nas configurações do dispositivo.',
         );
+
         return;
       }
 
       final position =
           await Geolocator.getCurrentPosition(
-        locationSettings:
-            const LocationSettings(
+        locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
         ),
       );
@@ -109,7 +150,15 @@ class _InspectionFormPageState
           longitude: position.longitude,
         ),
       );
+
+      bloc.add(
+        const InspectionLocationLoadingFinished(),
+      );
     } catch (error) {
+      bloc.add(
+        const InspectionLocationLoadingFinished(),
+      );
+
       if (!mounted) {
         return;
       }
@@ -120,17 +169,27 @@ class _InspectionFormPageState
     }
   }
 
+  // ============================================================
+  // MENSAGENS
+  // ============================================================
+
   void _showError(String message) {
     if (!mounted) {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-      ),
-    );
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+        ),
+      );
   }
+
+  // ============================================================
+  // AÇÕES
+  // ============================================================
 
   void _saveDraft() {
     bloc.add(
@@ -144,23 +203,24 @@ class _InspectionFormPageState
     );
   }
 
+  // ============================================================
+  // BUILD
+  // ============================================================
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider.value(
       value: bloc,
-      child: BlocListener<InspectionFormBloc,
-          InspectionFormState>(
+      child: BlocListener<InspectionFormBloc, InspectionFormState>(
         listener: (context, state) {
-          if (state.status ==
-              InspectionFormStatus.error) {
+          if (state.status == InspectionFormStatus.error) {
             _showError(
               state.errorMessage ??
                   'Não foi possível salvar a inspeção.',
             );
           }
 
-          if (state.status ==
-              InspectionFormStatus.success) {
+          if (state.status == InspectionFormStatus.success) {
             final message =
                 state.syncStatus ==
                         InspectionSyncStatus.draft
@@ -180,12 +240,10 @@ class _InspectionFormPageState
           appBar: AppBar(
             title: const Text('Nova inspeção'),
           ),
-          body: BlocBuilder<InspectionFormBloc,
-              InspectionFormState>(
+          body: BlocBuilder<InspectionFormBloc, InspectionFormState>(
             builder: (context, state) {
               final isSaving =
-                  state.status ==
-                      InspectionFormStatus.saving;
+                  state.status == InspectionFormStatus.saving;
 
               return SafeArea(
                 child: SingleChildScrollView(
@@ -222,6 +280,10 @@ class _InspectionFormPageState
     );
   }
 
+  // ============================================================
+  // OBSERVAÇÃO
+  // ============================================================
+
   Widget _buildObservationField() {
     return TextFormField(
       minLines: 5,
@@ -241,6 +303,10 @@ class _InspectionFormPageState
       },
     );
   }
+
+  // ============================================================
+  // CONDIÇÃO
+  // ============================================================
 
   Widget _buildConditionField(
     InspectionFormState state,
@@ -277,14 +343,17 @@ class _InspectionFormPageState
     );
   }
 
+  // ============================================================
+  // FOTO
+  // ============================================================
+
   Widget _buildPhotoSection(
     InspectionFormState state,
   ) {
     final photoPath = state.photoPath;
 
     return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
           'Evidência fotográfica',
@@ -382,12 +451,19 @@ class _InspectionFormPageState
     );
   }
 
+  // ============================================================
+  // LOCALIZAÇÃO
+  // ============================================================
+
   Widget _buildLocationSection(
     InspectionFormState state,
   ) {
     final hasLocation =
         state.latitude != null &&
             state.longitude != null;
+
+    final isGettingLocation =
+        state.isGettingLocation;
 
     return Column(
       crossAxisAlignment:
@@ -439,20 +515,37 @@ class _InspectionFormPageState
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: _captureLocation,
-            icon: const Icon(
-              Icons.location_on_outlined,
-            ),
+            onPressed:
+                isGettingLocation
+                    ? null
+                    : _captureLocation,
+            icon: isGettingLocation
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(
+                    Icons.location_on_outlined,
+                  ),
             label: Text(
-              hasLocation
-                  ? 'Atualizar localização'
-                  : 'Capturar localização',
+              isGettingLocation
+                  ? 'Obtendo localização...'
+                  : hasLocation
+                      ? 'Atualizar localização'
+                      : 'Capturar localização',
             ),
           ),
         ),
       ],
     );
   }
+
+  // ============================================================
+  // AÇÕES FINAIS
+  // ============================================================
 
   Widget _buildActions(
     bool isSaving,

@@ -1,11 +1,6 @@
 import '../../domain/entities/inspection_sync_status.dart';
 
-enum InspectionFormStatus {
-  initial,
-  saving,
-  success,
-  error,
-}
+enum InspectionFormStatus { initial, saving, success, error }
 
 class InspectionFormState {
   final String observation;
@@ -13,6 +8,7 @@ class InspectionFormState {
   final String? photoPath;
   final double? latitude;
   final double? longitude;
+  final bool isGettingLocation;
 
   final InspectionSyncStatus? syncStatus;
 
@@ -28,6 +24,7 @@ class InspectionFormState {
     this.syncStatus,
     this.status = InspectionFormStatus.initial,
     this.errorMessage,
+    this.isGettingLocation = false,
   });
 
   InspectionFormState copyWith({
@@ -39,6 +36,7 @@ class InspectionFormState {
     InspectionSyncStatus? syncStatus,
     InspectionFormStatus? status,
     String? errorMessage,
+    bool? isGettingLocation,
   }) {
     return InspectionFormState(
       observation: observation ?? this.observation,
@@ -49,6 +47,7 @@ class InspectionFormState {
       syncStatus: syncStatus ?? this.syncStatus,
       status: status ?? this.status,
       errorMessage: errorMessage,
+      isGettingLocation: isGettingLocation ?? this.isGettingLocation,
     );
   }
 }
